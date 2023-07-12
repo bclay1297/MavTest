@@ -4,6 +4,8 @@
 #include <conio.h>
 #include <winsock2.h>
 #include <WS2tcpip.h>
+#include <sys/types.h>
+//#include <sys/socket.h>
 
 #include <iostream>
 
@@ -41,6 +43,16 @@ int main()
 
         int status = bind(mavSocket, (SOCKADDR*)&mavAddr, sizeof(mavAddr));
 
+		struct timeval readTimeout;
+/*
+		readTimeout.tv_sec = 0;
+		readTimeout.tv_usec = 10;
+		setsockopt(mavSocket, SOL_SOCKET, SO_RCVTIMEO, (char *) & readTimeout, sizeof(readTimeout));
+*/
+		unsigned long mode = 1;  // non-blocking
+
+		status = ioctlsocket(mavSocket, FIONBIO, &mode);
+
         int bytesReceieved;
         char dataBuf[1024];
         int bufLen = sizeof(dataBuf);
@@ -59,10 +71,12 @@ int main()
         status = status;
 
 		bool done = false;
+		int msgCnt = 0;
+		bool sendHeartbeat = false;
 
 		while (done != true)
 		{
-			if (_kbhit() == true)
+			if (_kbhit() == 1)
 			{
 				char cmd = _getch();
 
@@ -76,12 +90,30 @@ int main()
 						autopilot_interface.arm_disarm(0);
 					break;
 
+					case 'H':
+						sendHeartbeat = true;
+					break;
+
+					case 'h':
+						sendHeartbeat = false;
+						break;
+
 					case 'O':
 						autopilot_interface.enable_offboard_control();
 					break;
 
 					case 'o':
 						autopilot_interface.disable_offboard_control();
+					break;
+
+					case 'r':
+						autopilot_interface.SendRequestMessage();
+						autopilot_interface.SendSetMessageInterval();
+
+					break;
+
+					case 's':
+						autopilot_interface.SendSetMode();
 					break;
 
 					case 'q':
@@ -94,6 +126,17 @@ int main()
 			}
 			autopilot_interface.read_messages();
 
+			if (sendHeartbeat == true)
+			{
+				msgCnt++;
+
+				if (msgCnt == 100)
+				{
+					msgCnt = 0;
+
+					autopilot_interface.SendHeartbeat();
+				}
+			}
 		}
     }
 
