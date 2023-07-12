@@ -231,6 +231,15 @@ public:
 
 	void send_setpoint();
 
+	void SendHeartbeat();
+	void SendSetMode();
+	void SendRequestMessage();
+	void SendSetMessageInterval();
+
+	int recv_message(SOCKET mavSocket, int bufSize, char* dataBuf);
+	int send_message(SOCKET mavSocket, const mavlink_message_t& message);
+
+
 private:
 
 	bool time_to_exit;
@@ -249,6 +258,9 @@ private:
 
 	Time_Stamps this_timestamps;
 
+	unsigned short mSendPort;
+
+	unsigned char mMsgSequence;
 
 };
 
